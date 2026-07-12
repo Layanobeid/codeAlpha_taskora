@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskora - Projects</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-tasks"></i>
+            <span>Taskora</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li>
+                <a href="dashboard.html">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="projects.html">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Projects</span>
+                </a>
+            </li>
+            <li>
+                <a href="kanban.html">
+                    <i class="fas fa-columns"></i>
+                    <span>Kanban Board</span>
+                </a>
+            </li>
+            <li class="logout">
+                <a href="#" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+<!-- Main Content -->
+<main class="main-content">
+    <header class="top-bar">
+        <h1>Projects</h1>
+        <div class="top-bar-right">
+            <button id="themeToggle" class="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+           <button id="createProjectBtn" class="btn-primary" style="width: auto; padding: 10px 20px;">
+            <i class="fas fa-plus"></i> New Project
+        </button>
+        <div class="user-info">
+            <span id="userName">User</span>
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar">
+        </div>
+    </header>
+
+        <!-- Projects Grid -->
+        <div id="projectsContainer" class="project-grid">
+            <!-- Projects will be loaded here -->
+        </div>
+    </main>
+
+   <!-- Create Project Modal -->
+<!-- Create Project Modal -->
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🚀 Create New Project</h2>
+            <span class="close">&times;</span>
+        </div>
+        <form id="createProjectForm">
+            <div class="form-group">
+                <label>📌 Project Title</label>
+                <input type="text" id="projectTitle" placeholder="Enter project title" required>
+            </div>
+            <div class="form-group">
+                <label>📝 Description</label>
+                <textarea id="projectDescription" placeholder="Describe your project" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>📅 Start Date</label>
+                <input type="date" id="projectStartDate">
+            </div>
+            <div class="form-group">
+                <label>📅 End Date</label>
+                <input type="date" id="projectEndDate">
+            </div>
+            <button type="submit" class="btn-primary">
+                ✨ Create Project
+            </button>
+        </form>
+    </div>
+</div>
+
+    <script src="js/api.js"></script>
+    <script src="js/projects.js"></script>
+</body>
+</html>

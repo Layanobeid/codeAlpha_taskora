@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskora - Kanban Board</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-tasks"></i>
+            <span>Taskora</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li>
+                <a href="dashboard.html">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="projects.html">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Projects</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="kanban.html">
+                    <i class="fas fa-columns"></i>
+                    <span>Kanban Board</span>
+                </a>
+            </li>
+            <li class="logout">
+                <a href="#" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+    <header class="top-bar">
+    <h1>Kanban Board</h1>
+    <div class="kanban-controls">
+    
+            <button id="themeToggle" class="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+         
+        <div class="user-info">
+            <span id="userName">User</span>
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar">
+        </div>
+  
+        <select id="projectFilter">
+            <option value="">All Projects</option>
+        </select>
+        <button id="createTaskBtn" class="btn-primary">
+            <i class="fas fa-plus"></i> New Task
+        </button>
+    </div>
+</header>
+        <!-- Kanban Columns -->
+        <div class="kanban-board">
+            <div class="kanban-column" data-status="To Do">
+                <div class="column-header">
+                    <h3><i class="fas fa-circle" style="color: #6b7280;"></i> To Do</h3>
+                    <span class="task-count">0</span>
+                </div>
+                <div class="column-tasks" id="todoTasks">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+
+            <div class="kanban-column" data-status="In Progress">
+                <div class="column-header">
+                    <h3><i class="fas fa-circle" style="color: #3b82f6;"></i> In Progress</h3>
+                    <span class="task-count">0</span>
+                </div>
+                <div class="column-tasks" id="inProgressTasks">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+
+            <div class="kanban-column" data-status="Review">
+                <div class="column-header">
+                    <h3><i class="fas fa-circle" style="color: #f59e0b;"></i> Review</h3>
+                    <span class="task-count">0</span>
+                </div>
+                <div class="column-tasks" id="reviewTasks">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+
+            <div class="kanban-column" data-status="Done">
+                <div class="column-header">
+                    <h3><i class="fas fa-circle" style="color: #10b981;"></i> Done</h3>
+                    <span class="task-count">0</span>
+                </div>
+                <div class="column-tasks" id="doneTasks">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+<!-- Create Task Modal -->
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📝 Create New Task</h2>
+            <button class="close">&times;</button>
+        </div>
+        
+        <form id="createTaskForm">
+            <!-- Title -->
+            <div class="form-group">
+                <label for="taskTitle">📌 Task Title</label>
+                <input type="text" id="taskTitle" placeholder="Enter task title" required>
+            </div>
+
+            <!-- Description + AI Button -->
+            <div class="form-group">
+                <label for="taskDescription">📝 Description</label>
+                <textarea id="taskDescription" placeholder="Describe your task..." rows="3"></textarea>
+                <button type="button" id="aiSuggestBtn" class="btn-ai">
+                    ✨ Suggest with AI
+                </button>
+            </div>
+
+            <!-- AI Result Area -->
+            <div id="aiSuggestionResult" style="display: none;"></div>
+
+            <!-- Project -->
+            <div class="form-group">
+                <label for="taskProject">📁 Project</label>
+                <select id="taskProject" required>
+                    <option value="">-- Select Project --</option>
+                </select>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+                <label for="taskPriority">⚡ Priority</label>
+                <select id="taskPriority">
+                    <option value="Low">🟢 Low</option>
+                    <option value="Medium" selected>🟡 Medium</option>
+                    <option value="High">🟠 High</option>
+                    <option value="Urgent">🔴 Urgent</option>
+                </select>
+            </div>
+
+            <!-- Deadline -->
+            <div class="form-group">
+                <label for="taskDeadline">📅 Deadline</label>
+                <input type="date" id="taskDeadline">
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-primary">✨ Create Task</button>
+        </form>
+    </div>
+</div>
+
+    <script src="js/api.js"></script>
+    <script src="js/ai.js"></script>  
+    <script src="js/kanban.js"></script>
+</body>
+</html>

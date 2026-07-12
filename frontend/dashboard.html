@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskora - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-tasks"></i>
+            <span>Taskora</span>
+        </div>
+        
+        <ul class="sidebar-nav">
+            <li class="active">
+                <a href="dashboard.html">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="projects.html">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Projects</span>
+                </a>
+            </li>
+            <li>
+                <a href="kanban.html">
+                    <i class="fas fa-columns"></i>
+                    <span>Kanban Board</span>
+                </a>
+            </li>
+            <li class="logout">
+                <a href="#" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-bar">
+            <h1>Dashboard</h1>
+            <div class="user-info">
+                <span id="userName">User</span>
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=User" alt="Avatar">
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-folder-open"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalProjects">0</h3>
+                    <p>Total Projects</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="completedTasks">0</h3>
+                    <p>Completed Tasks</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-spinner"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="pendingTasks">0</h3>
+                    <p>Pending Tasks</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalMembers">0</h3>
+                    <p>Team Members</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Projects -->
+        <section class="recent-section">
+            <div class="section-header">
+                <h2>Recent Projects</h2>
+                <a href="projects.html" class="view-all">View All →</a>
+            </div>
+            <div id="recentProjects" class="project-grid">
+                <!-- Projects will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Recent Tasks -->
+        <section class="recent-section">
+            <div class="section-header">
+                <h2>Recent Tasks</h2>
+                <a href="kanban.html" class="view-all">View All →</a>
+            </div>
+            <div id="recentTasks" class="task-list">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
