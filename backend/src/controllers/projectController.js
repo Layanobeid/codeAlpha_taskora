@@ -1,7 +1,7 @@
-const Project = require('../models/Project');
+const Project = require('../models/project');
 const User = require('../models/user');
-const Task = require('../models/Task');
-const Activity = require('../models/Activity');
+const Task = require('../models/task');
+const Activity = require('../models/activity');
 const { validationResult } = require('express-validator');
 
 // @desc    Create a new project
