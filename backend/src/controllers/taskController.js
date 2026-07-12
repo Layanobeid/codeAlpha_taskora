@@ -1,9 +1,9 @@
-const Task = require('../models/Task');
-const Project = require('../models/Project');
-const User = require('../models/User');
-const Comment = require('../models/Comment');
-const Activity = require('../models/Activity');
-const Notification = require('../models/Notification');
+const Task = require('../models/task');
+const Project = require('../models/project');
+const User = require('../models/user');
+const Comment = require('../models/comment');
+const Activity = require('../models/activity');
+const Notification = require('../models/notification');
 const { validationResult } = require('express-validator');
 
 // @desc    Create a new task
