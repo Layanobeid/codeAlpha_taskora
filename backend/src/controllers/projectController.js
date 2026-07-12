@@ -1,5 +1,5 @@
 const Project = require('../models/Project');
-const User = require('../models/User');
+const User = require('../models/user');
 const Task = require('../models/Task');
 const Activity = require('../models/Activity');
 const { validationResult } = require('express-validator');
