@@ -5,7 +5,12 @@ let projectMembers = [];
 
 function renderMembersList() {
     const container = document.getElementById('membersList');
-    if (!container) return;
+    if (!container) {
+        console.log('membersList not found');
+        return;
+    }
+    
+    console.log('Rendering members:', projectMembers); // للتأكد
     
     if (projectMembers.length === 0) {
         container.innerHTML = '';
@@ -48,7 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Load saved theme
     if (localStorage.getItem('darkMode') === 'true') {
         document.body.classList.add('dark-mode');
         const toggle = document.getElementById('themeToggle');
@@ -67,16 +71,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (createBtn) {
         createBtn.addEventListener('click', function() {
-            // Reset members when opening modal
             projectMembers = [];
             renderMembersList();
-            modal.classList.add('show');
+            if (modal) modal.classList.add('show');
         });
     }
     
     if (closeBtn) {
         closeBtn.addEventListener('click', function() {
-            modal.classList.remove('show');
+            if (modal) modal.classList.remove('show');
         });
     }
     
@@ -88,13 +91,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== ADD MEMBER =====
+    // ===== ADD MEMBER (Event Delegation) =====
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('btn-add-member')) {
-            const input = e.target.closest('.member-input-group').querySelector('.member-email');
-            if (!input) return;
+        // Check if the clicked element is the add button or inside it
+        const addBtn = e.target.closest('.btn-add-member');
+        if (addBtn) {
+            console.log('Add member button clicked!');
+            const input = addBtn.closest('.member-input-group').querySelector('.member-email');
+            if (!input) {
+                console.log('Input not found');
+                return;
+            }
             
             const email = input.value.trim();
+            console.log('Email:', email);
             
             if (!email) {
                 alert('Please enter an email address');
@@ -112,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             projectMembers.push(email);
+            console.log('Members after add:', projectMembers);
             renderMembersList();
             input.value = '';
         }
@@ -119,9 +130,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== REMOVE MEMBER =====
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-member')) {
-            const email = e.target.dataset.email;
+        const removeBtn = e.target.closest('.remove-member');
+        if (removeBtn) {
+            const email = removeBtn.dataset.email;
             projectMembers = projectMembers.filter(m => m !== email);
+            console.log('Members after remove:', projectMembers);
             renderMembersList();
         }
     });
@@ -137,6 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const startDate = document.getElementById('projectStartDate').value;
             const endDate = document.getElementById('projectEndDate').value;
             const members = projectMembers;
+
+            console.log('Creating project with members:', members);
 
             if (!title) {
                 alert('Please enter a project title');
@@ -154,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (response.success) {
                     alert('✅ Project created successfully!');
-                    modal.classList.remove('show');
+                    if (modal) modal.classList.remove('show');
                     form.reset();
                     projectMembers = [];
                     renderMembersList();
@@ -201,7 +216,6 @@ async function loadProjects() {
         }
 
         container.innerHTML = projects.map(p => {
-            // Get member names
             const memberNames = p.members?.map(m => {
                 if (m.user && m.user.name) return m.user.name;
                 return 'Unknown';
