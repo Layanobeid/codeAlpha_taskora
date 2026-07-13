@@ -143,7 +143,14 @@
                     <option value="">-- Select Project --</option>
                 </select>
             </div>
-
+<!-- ===== NEW: Assign to ===== -->
+<div class="form-group">
+    <label for="taskAssignTo">👥 Assign to</label>
+    <select id="taskAssignTo" multiple style="height: auto; min-height: 80px;">
+        <!-- Users will be loaded here -->
+    </select>
+    <small style="color: var(--gray-500); font-size: 12px;">Hold Ctrl/Cmd to select multiple users</small>
+</div>
             <!-- Priority -->
             <div class="form-group">
                 <label for="taskPriority">⚡ Priority</label>
