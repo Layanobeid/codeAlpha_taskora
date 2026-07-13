@@ -127,6 +127,17 @@ if (assignedTo && assignedTo.length > 0) {
   }));
   await Notification.insertMany(notifications);
 }
+    // بعد تغيير الحالة
+if (task.assignedTo.length > 0) {
+  const notifications = task.assignedTo.map(userId => ({
+    userId,
+    type: 'status_changed',
+    message: `🔄 Task "${task.title}" status changed to ${status}`,
+    relatedTask: task._id,
+    relatedProject: task.projectId
+  }));
+  await Notification.insertMany(notifications);
+}
     // Only show tasks from projects user has access to
     const userProjects = await Project.find({
       $or: [
