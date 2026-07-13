@@ -126,3 +126,148 @@ async function showMembers(projectId) {
         alert('Error loading members: ' + error.message);
     }
 }
+
+
+// frontend/js/dashboard.js
+
+// ===== NOTIFICATIONS =====
+let notificationInterval = null;
+
+async function loadNotifications() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const response = await fetch('https://codealpha-taskora.onrender.com/api/notifications', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      const notifications = result.data || [];
+      const unreadCount = result.unreadCount || 0;
+
+      // Update badge
+      const badge = document.getElementById('notificationBadge');
+      if (badge) {
+        badge.textContent = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'block' : 'none';
+      }
+
+      // Render list
+      const list = document.getElementById('notificationList');
+      if (list) {
+        if (notifications.length === 0) {
+          list.innerHTML = `<p style="text-align: center; color: var(--gray-400); padding: 20px;">✨ No notifications yet</p>`;
+          return;
+        }
+
+        list.innerHTML = notifications.map(n => `
+          <div class="notification-item ${n.isRead ? '' : 'unread'}" data-id="${n._id}">
+            <div class="notif-icon">
+              <i class="fas ${getNotificationIcon(n.type)}"></i>
+            </div>
+            <div class="notif-content">
+              <p>${n.message}</p>
+              <span class="notif-time">${timeAgo(n.createdAt)}</span>
+            </div>
+          </div>
+        `).join('');
+
+        // Mark as read on click
+        list.querySelectorAll('.notification-item').forEach(item => {
+          item.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            try {
+              await fetch(`https://codealpha-taskora.onrender.com/api/notifications/${id}/read`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              this.classList.remove('unread');
+              loadNotifications(); // Refresh
+            } catch (error) {
+              console.error('Error marking notification as read:', error);
+            }
+          });
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+  }
+}
+
+function getNotificationIcon(type) {
+  const icons = {
+    'task_assigned': 'fa-user-plus',
+    'status_changed': 'fa-exchange-alt',
+    'comment_added': 'fa-comment',
+    'deadline_reminder': 'fa-clock'
+  };
+  return icons[type] || 'fa-bell';
+}
+
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(date).toLocaleDateString();
+}
+
+// ===== TOGGLE NOTIFICATIONS DROPDOWN =====
+document.addEventListener('DOMContentLoaded', function() {
+  // ... الكود الموجود
+
+  const notifBtn = document.getElementById('notificationBtn');
+  const notifDropdown = document.getElementById('notificationDropdown');
+  
+  if (notifBtn && notifDropdown) {
+    notifBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      notifDropdown.classList.toggle('show');
+      if (notifDropdown.classList.contains('show')) {
+        loadNotifications();
+      }
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+        notifDropdown.classList.remove('show');
+      }
+    });
+  }
+
+  // Mark all as read
+  const markAllBtn = document.getElementById('markAllRead');
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', async function() {
+      const token = localStorage.getItem('token');
+      try {
+        await fetch('https://codealpha-taskora.onrender.com/api/notifications/read-all', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        loadNotifications();
+      } catch (error) {
+        console.error('Error marking all as read:', error);
+      }
+    });
+  }
+
+  // Load notifications initially
+  loadNotifications();
+
+  // Refresh notifications every 30 seconds
+  notificationInterval = setInterval(loadNotifications, 30000);
+});
+
+
