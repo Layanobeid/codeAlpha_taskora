@@ -255,7 +255,93 @@ async function loadProjectsForFilter() {
         console.error('Error loading projects:', error);
     }
 }
+// frontend/js/kanban.js
 
+// ===== LOAD USERS FOR ASSIGN =====
+async function loadUsersForAssign() {
+    const token = localStorage.getItem('token');
+    const select = document.getElementById('taskAssignTo');
+    
+    if (!select) return;
+
+    try {
+        // Get all users (from projects)
+        const projectsResponse = await window.TaskoraAPI.getProjects(token);
+        const projects = projectsResponse.data || [];
+        
+        // Collect unique users from all projects
+        const usersMap = new Map();
+        projects.forEach(project => {
+            // Add owner
+            if (project.owner && project.owner._id) {
+                usersMap.set(project.owner._id, {
+                    id: project.owner._id,
+                    name: project.owner.name || 'Unknown',
+                    email: project.owner.email || ''
+                });
+            }
+            // Add members
+            project.members?.forEach(member => {
+                if (member.user && member.user._id) {
+                    usersMap.set(member.user._id, {
+                        id: member.user._id,
+                        name: member.user.name || 'Unknown',
+                        email: member.user.email || ''
+                    });
+                }
+            });
+        });
+
+        const users = Array.from(usersMap.values());
+        
+        select.innerHTML = users.map(user => 
+            `<option value="${user.id}">${user.name} (${user.email})</option>`
+        ).join('');
+
+        if (users.length === 0) {
+            select.innerHTML = `<option value="">No users available</option>`;
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// ===== UPDATE loadProjectsForSelect =====
+async function loadProjectsForSelect() {
+    const token = localStorage.getItem('token');
+    const select = document.getElementById('taskProject');
+
+    if (!select) return;
+
+    try {
+        const response = await window.TaskoraAPI.getProjects(token);
+        const projects = response.data || [];
+
+        select.innerHTML = projects.map(p => 
+            `<option value="${p._id}">${p.title}</option>`
+        ).join('');
+
+        // ✅ Load users when project is selected
+        if (select.value) {
+            loadUsersForAssign();
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+}
+
+// ===== When project changes, reload users =====
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+
+    // Add event listener for project select
+    const projectSelect = document.getElementById('taskProject');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function() {
+            loadUsersForAssign();
+        });
+    }
+});
 // ===== LOAD PROJECTS FOR SELECT =====
 async function loadProjectsForSelect() {
     const token = localStorage.getItem('token');
