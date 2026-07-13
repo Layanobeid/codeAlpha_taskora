@@ -7,33 +7,56 @@ const { validationResult } = require('express-validator');
 // @desc    Create a new project
 // @route   POST /api/projects
 // @access  Private
+// backend/src/controllers/projectController.js
+
 exports.createProject = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
+    const { title, description, startDate, endDate, members } = req.body;
 
-    const { title, description, startDate, endDate } = req.body;
+    console.log('📝 Creating project with members:', members); // ← أضف هذا
+
+    // Build members array - Always include owner
+    let memberList = [
+      {
+        user: req.user.id,
+        role: 'Manager',
+        joinedAt: Date.now()
+      }
+    ];
+
+    // Add invited members if they exist
+    if (members && Array.isArray(members) && members.length > 0) {
+      console.log('👥 Processing members:', members); // ← أضف هذا
+      
+      for (const email of members) {
+        const user = await User.findOne({ email });
+        if (user) {
+          console.log('✅ Found user:', user.email); // ← أضف هذا
+          memberList.push({
+            user: user._id,
+            role: 'Member',
+            joinedAt: Date.now()
+          });
+        } else {
+          console.log('❌ User not found:', email); // ← أضف هذا
+        }
+      }
+    }
 
     const project = await Project.create({
       title,
       description,
       owner: req.user.id,
-      members: [
-        {
-          user: req.user.id,
-          role: 'Manager',
-          joinedAt: Date.now()
-        }
-      ],
+      members: memberList,
       startDate,
       endDate,
       status: 'Active'
     });
+
+    console.log('✅ Project created with members:', project.members.length); // ← أضف هذا
+
+    // Populate before sending response
+    await project.populate('members.user', 'name email avatar');
 
     // Create activity
     await Activity.create({
@@ -48,6 +71,7 @@ exports.createProject = async (req, res, next) => {
       data: project
     });
   } catch (error) {
+    console.error('❌ Create project error:', error); // ← أضف هذا
     next(error);
   }
 };
