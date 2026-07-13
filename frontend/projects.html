@@ -76,14 +76,34 @@
             <span class="close">&times;</span>
         </div>
         <form id="createProjectForm">
+            <!-- Project Title -->
             <div class="form-group">
                 <label>📌 Project Title</label>
                 <input type="text" id="projectTitle" placeholder="Enter project title" required>
             </div>
+
+            <!-- Description -->
             <div class="form-group">
                 <label>📝 Description</label>
                 <textarea id="projectDescription" placeholder="Describe your project" rows="3"></textarea>
             </div>
+
+            <!-- ===== NEW: Add Members ===== -->
+            <div class="form-group">
+                <label>👥 Team Members</label>
+                <div id="membersContainer">
+                    <div class="member-input-group">
+                        <input type="email" class="member-email" placeholder="Enter member email">
+                        <button type="button" class="btn-add-member">+</button>
+                    </div>
+                </div>
+                <small style="color: var(--gray-500); font-size: 12px;">Enter email and click + to add members</small>
+                <div id="membersList" class="members-list">
+                    <!-- Added members will appear here -->
+                </div>
+            </div>
+
+            <!-- Start & End Dates -->
             <div class="form-group">
                 <label>📅 Start Date</label>
                 <input type="date" id="projectStartDate">
@@ -92,9 +112,8 @@
                 <label>📅 End Date</label>
                 <input type="date" id="projectEndDate">
             </div>
-            <button type="submit" class="btn-primary">
-                ✨ Create Project
-            </button>
+
+            <button type="submit" class="btn-primary">✨ Create Project</button>
         </form>
     </div>
 </div>
