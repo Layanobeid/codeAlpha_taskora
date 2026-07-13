@@ -1,7 +1,7 @@
 // frontend/js/kanban.js
 let currentProjectFilter = '';
 let allProjects = [];
-let socket = null;
+
 
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('token');
