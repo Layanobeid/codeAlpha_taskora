@@ -1,3 +1,4 @@
+// backend/src/controllers/taskController.js
 const Task = require('../models/task');
 const Project = require('../models/project');
 const User = require('../models/user');
@@ -72,7 +73,7 @@ exports.createTask = async (req, res, next) => {
       const notifications = assignedTo.map(userId => ({
         userId,
         type: 'task_assigned',
-        message: `You have been assigned to task "${title}" in project "${project.title}"`,
+        message: `📋 You have been assigned to task "${title}" in project "${project.title}"`,
         relatedTask: task._id,
         relatedProject: projectId
       }));
@@ -84,6 +85,7 @@ exports.createTask = async (req, res, next) => {
       data: task
     });
   } catch (error) {
+    console.error('❌ Create Task Error:', error);
     next(error);
   }
 };
@@ -97,47 +99,11 @@ exports.getTasks = async (req, res, next) => {
 
     const filter = {};
 
-    // Filter by project
-    if (projectId) {
-      filter.projectId = projectId;
-    }
+    if (projectId) filter.projectId = projectId;
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+    if (assignedTo) filter.assignedTo = assignedTo;
 
-    // Filter by status
-    if (status) {
-      filter.status = status;
-    }
-
-    // Filter by priority
-    if (priority) {
-      filter.priority = priority;
-    }
-
-    // Filter by assigned user
-    if (assignedTo) {
-      filter.assignedTo = assignedTo;
-    }
-// بعد إنشاء المهمة
-if (assignedTo && assignedTo.length > 0) {
-  const notifications = assignedTo.map(userId => ({
-    userId,
-    type: 'task_assigned',
-    message: `📋 You have been assigned to task "${title}"`,
-    relatedTask: task._id,
-    relatedProject: projectId
-  }));
-  await Notification.insertMany(notifications);
-}
-    // بعد تغيير الحالة
-if (task.assignedTo.length > 0) {
-  const notifications = task.assignedTo.map(userId => ({
-    userId,
-    type: 'status_changed',
-    message: `🔄 Task "${task.title}" status changed to ${status}`,
-    relatedTask: task._id,
-    relatedProject: task.projectId
-  }));
-  await Notification.insertMany(notifications);
-}
     // Only show tasks from projects user has access to
     const userProjects = await Project.find({
       $or: [
@@ -183,6 +149,7 @@ if (task.assignedTo.length > 0) {
       data: tasks
     });
   } catch (error) {
+    console.error('❌ GetTasks Error:', error);
     next(error);
   }
 };
@@ -204,7 +171,6 @@ exports.getTaskById = async (req, res, next) => {
       });
     }
 
-    // Check access to project
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -221,6 +187,7 @@ exports.getTaskById = async (req, res, next) => {
       data: task
     });
   } catch (error) {
+    console.error('❌ GetTaskById Error:', error);
     next(error);
   }
 };
@@ -247,7 +214,6 @@ exports.updateTask = async (req, res, next) => {
       });
     }
 
-    // Check access
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -267,11 +233,9 @@ exports.updateTask = async (req, res, next) => {
     if (deadline) task.deadline = deadline;
 
     await task.save();
-
     await task.populate('createdBy', 'name email avatar');
     await task.populate('assignedTo', 'name email avatar');
 
-    // Create activity
     await Activity.create({
       projectId: task.projectId,
       taskId: task._id,
@@ -285,6 +249,7 @@ exports.updateTask = async (req, res, next) => {
       data: task
     });
   } catch (error) {
+    console.error('❌ UpdateTask Error:', error);
     next(error);
   }
 };
@@ -303,7 +268,6 @@ exports.deleteTask = async (req, res, next) => {
       });
     }
 
-    // Check access
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -315,13 +279,8 @@ exports.deleteTask = async (req, res, next) => {
       });
     }
 
-    // Delete comments
     await Comment.deleteMany({ taskId: task._id });
-
-    // Delete activity
     await Activity.deleteMany({ taskId: task._id });
-
-    // Delete task
     await task.deleteOne();
 
     res.status(200).json({
@@ -329,6 +288,7 @@ exports.deleteTask = async (req, res, next) => {
       message: 'Task deleted successfully'
     });
   } catch (error) {
+    console.error('❌ DeleteTask Error:', error);
     next(error);
   }
 };
@@ -356,7 +316,6 @@ exports.assignTask = async (req, res, next) => {
       });
     }
 
-    // Check access
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -368,7 +327,6 @@ exports.assignTask = async (req, res, next) => {
       });
     }
 
-    // Verify all users exist and are project members
     const users = await User.find({ _id: { $in: userIds } });
     const projectMemberIds = project.members.map(m => m.user.toString());
     projectMemberIds.push(project.owner.toString());
@@ -386,10 +344,8 @@ exports.assignTask = async (req, res, next) => {
 
     task.assignedTo = validUsers.map(u => u._id);
     await task.save();
-
     await task.populate('assignedTo', 'name email avatar');
 
-    // Create activity
     await Activity.create({
       projectId: task.projectId,
       taskId: task._id,
@@ -398,7 +354,6 @@ exports.assignTask = async (req, res, next) => {
       details: `Task "${task.title}" was assigned to ${validUsers.length} users`
     });
 
-    // Create notifications
     const notifications = validUsers.map(user => ({
       userId: user._id,
       type: 'task_assigned',
@@ -413,6 +368,7 @@ exports.assignTask = async (req, res, next) => {
       data: task
     });
   } catch (error) {
+    console.error('❌ AssignTask Error:', error);
     next(error);
   }
 };
@@ -448,7 +404,6 @@ exports.updateTaskStatus = async (req, res, next) => {
       });
     }
 
-    // Check access
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -464,7 +419,6 @@ exports.updateTaskStatus = async (req, res, next) => {
     task.status = status;
     await task.save();
 
-    // Create activity
     await Activity.create({
       projectId: task.projectId,
       taskId: task._id,
@@ -473,12 +427,11 @@ exports.updateTaskStatus = async (req, res, next) => {
       details: `Task "${task.title}" moved from ${oldStatus} to ${status}`
     });
 
-    // Create notification for assigned users
     if (task.assignedTo.length > 0) {
       const notifications = task.assignedTo.map(userId => ({
         userId,
         type: 'status_changed',
-        message: `Task "${task.title}" status changed to ${status}`,
+        message: `🔄 Task "${task.title}" status changed to ${status}`,
         relatedTask: task._id,
         relatedProject: project._id
       }));
@@ -490,6 +443,7 @@ exports.updateTaskStatus = async (req, res, next) => {
       data: task
     });
   } catch (error) {
+    console.error('❌ UpdateTaskStatus Error:', error);
     next(error);
   }
 };
@@ -518,6 +472,7 @@ exports.getTaskComments = async (req, res, next) => {
       data: comments
     });
   } catch (error) {
+    console.error('❌ GetTaskComments Error:', error);
     next(error);
   }
 };
@@ -544,7 +499,6 @@ exports.addComment = async (req, res, next) => {
       });
     }
 
-    // Check access
     const project = await Project.findById(task.projectId);
     const hasAccess = project.owner.toString() === req.user.id ||
       project.members.some(m => m.user.toString() === req.user.id);
@@ -564,7 +518,6 @@ exports.addComment = async (req, res, next) => {
 
     await comment.populate('userId', 'name email avatar');
 
-    // Create activity
     await Activity.create({
       projectId: task.projectId,
       taskId: task._id,
@@ -573,14 +526,13 @@ exports.addComment = async (req, res, next) => {
       details: `Comment added to task "${task.title}"`
     });
 
-    // Create notification for assigned users
     if (task.assignedTo.length > 0) {
       const notifications = task.assignedTo
         .filter(userId => userId.toString() !== req.user.id)
         .map(userId => ({
           userId,
           type: 'comment_added',
-          message: `New comment on task "${task.title}" by ${req.user.name}`,
+          message: `💬 New comment on task "${task.title}" by ${req.user.name}`,
           relatedTask: task._id,
           relatedProject: project._id
         }));
@@ -592,6 +544,7 @@ exports.addComment = async (req, res, next) => {
       data: comment
     });
   } catch (error) {
+    console.error('❌ AddComment Error:', error);
     next(error);
   }
 };
