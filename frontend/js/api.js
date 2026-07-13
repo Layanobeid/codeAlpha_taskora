@@ -1,5 +1,5 @@
 // frontend/js/api.js
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'https://codealpha-taskora.onrender.com/api';
 
 // Helper function for API calls
 async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
