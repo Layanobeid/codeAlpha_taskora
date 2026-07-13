@@ -94,9 +94,9 @@ async function loadDashboardData() {
         const projectsData = await window.TaskoraAPI.getProjects(token);
         const projects = projectsData.data || [];
 
-        // Get tasks - USE DIFFERENT VARIABLE NAME
+        // ✅ Get tasks - FIXED
         const tasksData = await window.TaskoraAPI.getTasks(token);
-        const tasks = tasksData.data || [];  // ← هنا كان الخطأ
+        const tasks = tasksData.data || [];
 
         // Update stats
         const totalProjects = projects.length;
