@@ -1,12 +1,40 @@
 // frontend/js/projects.js
+
+// ===== MEMBERS MANAGEMENT =====
+let projectMembers = [];
+
+function renderMembersList() {
+    const container = document.getElementById('membersList');
+    if (!container) return;
+    
+    if (projectMembers.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = projectMembers.map(email => `
+        <span class="member-tag">
+            ${email}
+            <span class="remove-member" data-email="${email}">×</span>
+        </span>
+    `).join('');
+}
+
+// ===== MAIN =====
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     // Update user info
-    if (user.name) {
-        document.getElementById('userName').textContent = user.name;
-        document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4f46e5&color=fff`;
+    const userNameEl = document.getElementById('userName');
+    const userAvatarEl = document.getElementById('userAvatar');
+    
+    if (userNameEl && user.name) {
+        userNameEl.textContent = user.name;
+    }
+    
+    if (userAvatarEl && user.name) {
+        userAvatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4f46e5&color=fff`;
     }
 
     // ===== DARK MODE =====
@@ -29,189 +57,133 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ===== LOAD PROJECTS =====
     loadProjects();
 
-    // Create Project Modal
+    // ===== CREATE PROJECT MODAL =====
     const modal = document.getElementById('projectModal');
     const createBtn = document.getElementById('createProjectBtn');
     const closeBtn = document.querySelector('.close');
 
-    createBtn?.addEventListener('click', () => modal.classList.add('show'));
-    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
-    modal?.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
-    });
-
-    // Create Project Form
-    const form = document.getElementById('createProjectForm');
-    form?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const title = document.getElementById('projectTitle').value;
-        const description = document.getElementById('projectDescription').value;
-        const startDate = document.getElementById('projectStartDate').value;
-        const endDate = document.getElementById('projectEndDate').value;
-
-        try {
-            const response = await window.TaskoraAPI.createProject(token, {
-                title,
-                description,
-                startDate,
-                endDate
-            });
-
-            if (response.success) {
-                modal.classList.remove('show');
-                form.reset();
-                loadProjects();
-            }
-        } catch (error) {
-            alert('Error creating project: ' + error.message);
-        }
-    });
-});
-
-// frontend/js/projects.js
-
-// ===== MEMBERS MANAGEMENT =====
-let projectMembers = [];
-
-// Add member button
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn-add-member')) {
-        const input = e.target.closest('.member-input-group').querySelector('.member-email');
-        const email = input.value.trim();
-        
-        if (!email) {
-            alert('Please enter an email address');
-            return;
-        }
-        
-        if (!email.includes('@')) {
-            alert('Please enter a valid email address');
-            return;
-        }
-        
-        if (projectMembers.includes(email)) {
-            alert('This member is already added');
-            return;
-        }
-        
-        projectMembers.push(email);
-        renderMembersList();
-        input.value = '';
-    }
-});
-
-// Remove member
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('remove-member')) {
-        const email = e.target.dataset.email;
-        projectMembers = projectMembers.filter(m => m !== email);
-        renderMembersList();
-    }
-});
-
-function renderMembersList() {
-    const container = document.getElementById('membersList');
-    if (!container) return;
-    
-    if (projectMembers.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    
-    container.innerHTML = projectMembers.map(email => `
-        <span class="member-tag">
-            ${email}
-            <span class="remove-member" data-email="${email}">×</span>
-        </span>
-    `).join('');
-}
-
-// ===== CREATE PROJECT =====
-// عدل دالة create project
-const form = document.getElementById('createProjectForm');
-form?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const title = document.getElementById('projectTitle').value;
-    const description = document.getElementById('projectDescription').value;
-    const startDate = document.getElementById('projectStartDate').value;
-    const endDate = document.getElementById('projectEndDate').value;
-    const members = projectMembers; // ← get members
-
-    if (!title) {
-        alert('Please enter a project title');
-        return;
-    }
-
-    try {
-        const response = await window.TaskoraAPI.createProject(token, {
-            title,
-            description,
-            startDate,
-            endDate,
-            members: members  // ← send members to backend
-        });
-
-        if (response.success) {
-            alert('✅ Project created successfully!');
-            modal.classList.remove('show');
-            form.reset();
-            projectMembers = []; // Clear members
+    if (createBtn) {
+        createBtn.addEventListener('click', function() {
+            // Reset members when opening modal
+            projectMembers = [];
             renderMembersList();
-            loadProjects();
+            modal.classList.add('show');
+        });
+    }
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            modal.classList.remove('show');
+        });
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    }
+
+    // ===== ADD MEMBER =====
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-add-member')) {
+            const input = e.target.closest('.member-input-group').querySelector('.member-email');
+            if (!input) return;
+            
+            const email = input.value.trim();
+            
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            if (projectMembers.includes(email)) {
+                alert('This member is already added');
+                return;
+            }
+            
+            projectMembers.push(email);
+            renderMembersList();
+            input.value = '';
         }
-    } catch (error) {
-        alert('❌ Error creating project: ' + error.message);
+    });
+
+    // ===== REMOVE MEMBER =====
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-member')) {
+            const email = e.target.dataset.email;
+            projectMembers = projectMembers.filter(m => m !== email);
+            renderMembersList();
+        }
+    });
+
+    // ===== CREATE PROJECT FORM =====
+    const form = document.getElementById('createProjectForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('projectTitle').value;
+            const description = document.getElementById('projectDescription').value;
+            const startDate = document.getElementById('projectStartDate').value;
+            const endDate = document.getElementById('projectEndDate').value;
+            const members = projectMembers;
+
+            if (!title) {
+                alert('Please enter a project title');
+                return;
+            }
+
+            try {
+                const response = await window.TaskoraAPI.createProject(token, {
+                    title,
+                    description,
+                    startDate,
+                    endDate,
+                    members: members
+                });
+
+                if (response.success) {
+                    alert('✅ Project created successfully!');
+                    modal.classList.remove('show');
+                    form.reset();
+                    projectMembers = [];
+                    renderMembersList();
+                    loadProjects();
+                }
+            } catch (error) {
+                alert('❌ Error creating project: ' + error.message);
+            }
+        });
+    }
+
+    // ===== LOGOUT =====
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        });
     }
 });
 
-    // Create Project Modal
-    const modal = document.getElementById('projectModal');
-    const createBtn = document.getElementById('createProjectBtn');
-    const closeBtn = document.querySelector('.close');
-
-    createBtn?.addEventListener('click', () => modal.classList.add('show'));
-    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
-    modal?.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
-    });
-
-    // Create Project Form
-    const form = document.getElementById('createProjectForm');
-    form?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const title = document.getElementById('projectTitle').value;
-        const description = document.getElementById('projectDescription').value;
-        const startDate = document.getElementById('projectStartDate').value;
-        const endDate = document.getElementById('projectEndDate').value;
-
-        try {
-            const response = await window.TaskoraAPI.createProject(token, {
-                title,
-                description,
-                startDate,
-                endDate
-            });
-
-            if (response.success) {
-                modal.classList.remove('show');
-                form.reset();
-                loadProjects(); // Reload projects
-            }
-        } catch (error) {
-            alert('Error creating project: ' + error.message);
-        }
-    });
-
-
-// frontend/js/projects.js
+// ===== LOAD PROJECTS =====
 async function loadProjects() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('projectsContainer');
+
+    if (!container) return;
 
     try {
         const response = await window.TaskoraAPI.getProjects(token);
@@ -265,17 +237,19 @@ async function loadProjects() {
     }
 }
 
+// ===== VIEW PROJECT =====
 async function viewProject(projectId) {
     window.location.href = `kanban.html?project=${projectId}`;
 }
 
+// ===== DELETE PROJECT =====
 async function deleteProject(projectId) {
     if (!confirm('Are you sure you want to delete this project?')) return;
     
     const token = localStorage.getItem('token');
     try {
         await window.TaskoraAPI.deleteProject(token, projectId);
-        loadProjects(); // Reload
+        loadProjects();
     } catch (error) {
         alert('Error deleting project: ' + error.message);
     }
