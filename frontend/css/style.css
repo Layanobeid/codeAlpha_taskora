@@ -528,7 +528,66 @@ body {
     transform: rotate(30deg);
     box-shadow: var(--shadow-md);
 }
+/* Members Input */
+.member-input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
 
+.member-input-group input {
+    flex: 1;
+}
+
+.btn-add-member {
+    padding: 10px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 18px;
+    transition: var(--transition);
+}
+
+.btn-add-member:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.member-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gray-100);
+    padding: 4px 12px 4px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--gray-700);
+}
+
+.member-tag .remove-member {
+    cursor: pointer;
+    color: var(--danger);
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.member-tag .remove-member:hover {
+    transform: scale(1.2);
+}
+
+body.dark-mode .member-tag {
+    background: var(--gray-200);
+    color: var(--gray-200);
+}
 /* ===== STATS GRID ===== */
 .stats-grid {
     display: grid;
