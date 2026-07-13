@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    // ===== WEBSOCKET - Move this here! =====
+    // ===== WEBSOCKET =====
     if (token) {
         socket = window.TaskoraSocket.connectSocket(token);
         console.log('🔌 WebSocket initialized');
@@ -82,6 +82,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ===== PROJECT SELECT CHANGE =====
+    const projectSelect = document.getElementById('taskProject');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function() {
+            loadUsersForAssign();
+        });
+    }
+
     // ===== CREATE TASK FORM =====
     const form = document.getElementById('createTaskForm');
     if (form) {
@@ -93,6 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const projectId = document.getElementById('taskProject').value;
             const priority = document.getElementById('taskPriority').value;
             const deadline = document.getElementById('taskDeadline').value;
+            
+            // ✅ Get selected users
+            const assignSelect = document.getElementById('taskAssignTo');
+            const assignedTo = assignSelect ? 
+                Array.from(assignSelect.selectedOptions).map(opt => opt.value) : 
+                [];
 
             if (!title) {
                 alert('Please enter a task title');
@@ -110,7 +124,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     description,
                     projectId,
                     priority,
-                    deadline
+                    deadline,
+                    assignedTo: assignedTo
                 });
 
                 if (response.success) {
@@ -255,7 +270,6 @@ async function loadProjectsForFilter() {
         console.error('Error loading projects:', error);
     }
 }
-// frontend/js/kanban.js
 
 // ===== LOAD USERS FOR ASSIGN =====
 async function loadUsersForAssign() {
@@ -265,14 +279,11 @@ async function loadUsersForAssign() {
     if (!select) return;
 
     try {
-        // Get all users (from projects)
         const projectsResponse = await window.TaskoraAPI.getProjects(token);
         const projects = projectsResponse.data || [];
         
-        // Collect unique users from all projects
         const usersMap = new Map();
         projects.forEach(project => {
-            // Add owner
             if (project.owner && project.owner._id) {
                 usersMap.set(project.owner._id, {
                     id: project.owner._id,
@@ -280,7 +291,6 @@ async function loadUsersForAssign() {
                     email: project.owner.email || ''
                 });
             }
-            // Add members
             project.members?.forEach(member => {
                 if (member.user && member.user._id) {
                     usersMap.set(member.user._id, {
@@ -306,42 +316,6 @@ async function loadUsersForAssign() {
     }
 }
 
-// ===== UPDATE loadProjectsForSelect =====
-async function loadProjectsForSelect() {
-    const token = localStorage.getItem('token');
-    const select = document.getElementById('taskProject');
-
-    if (!select) return;
-
-    try {
-        const response = await window.TaskoraAPI.getProjects(token);
-        const projects = response.data || [];
-
-        select.innerHTML = projects.map(p => 
-            `<option value="${p._id}">${p.title}</option>`
-        ).join('');
-
-        // ✅ Load users when project is selected
-        if (select.value) {
-            loadUsersForAssign();
-        }
-    } catch (error) {
-        console.error('Error loading projects:', error);
-    }
-}
-
-// ===== When project changes, reload users =====
-document.addEventListener('DOMContentLoaded', function() {
-    // ... existing code ...
-
-    // Add event listener for project select
-    const projectSelect = document.getElementById('taskProject');
-    if (projectSelect) {
-        projectSelect.addEventListener('change', function() {
-            loadUsersForAssign();
-        });
-    }
-});
 // ===== LOAD PROJECTS FOR SELECT =====
 async function loadProjectsForSelect() {
     const token = localStorage.getItem('token');
@@ -356,6 +330,11 @@ async function loadProjectsForSelect() {
         select.innerHTML = projects.map(p => 
             `<option value="${p._id}">${p.title}</option>`
         ).join('');
+
+        // Load users for the selected project
+        if (select.value) {
+            await loadUsersForAssign();
+        }
     } catch (error) {
         console.error('Error loading projects:', error);
     }
@@ -374,7 +353,6 @@ async function loadKanbanData() {
         const response = await window.TaskoraAPI.getTasks(token, filters);
         const tasks = response.data || [];
 
-        // Group tasks by status
         const columns = {
             'To Do': [],
             'In Progress': [],
@@ -390,13 +368,11 @@ async function loadKanbanData() {
             }
         });
 
-        // Render each column
         renderColumn('todoTasks', columns['To Do'], 'To Do');
         renderColumn('inProgressTasks', columns['In Progress'], 'In Progress');
         renderColumn('reviewTasks', columns['Review'], 'Review');
         renderColumn('doneTasks', columns['Done'], 'Done');
 
-        // Update counts
         updateColumnCounts();
 
     } catch (error) {
@@ -437,7 +413,6 @@ function renderColumn(containerId, tasks, status) {
         </div>
     `).join('');
 
-    // Add drag and drop listeners
     container.querySelectorAll('.kanban-card').forEach(card => {
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
@@ -493,7 +468,6 @@ async function handleDrop(e) {
     try {
         await window.TaskoraAPI.updateTaskStatus(token, draggedTaskId, newStatus);
         
-        // ===== EMIT VIA WEBSOCKET =====
         if (socket) {
             window.TaskoraSocket.emitTaskStatusChanged({
                 projectId: column.dataset.projectId || 'unknown',
