@@ -116,7 +116,17 @@ exports.getTasks = async (req, res, next) => {
     if (assignedTo) {
       filter.assignedTo = assignedTo;
     }
-
+// بعد إنشاء المهمة
+if (assignedTo && assignedTo.length > 0) {
+  const notifications = assignedTo.map(userId => ({
+    userId,
+    type: 'task_assigned',
+    message: `📋 You have been assigned to task "${title}"`,
+    relatedTask: task._id,
+    relatedProject: projectId
+  }));
+  await Notification.insertMany(notifications);
+}
     // Only show tasks from projects user has access to
     const userProjects = await Project.find({
       $or: [
