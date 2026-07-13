@@ -1,7 +1,7 @@
 // frontend/js/kanban.js
 let currentProjectFilter = '';
 let allProjects = [];
-
+let socket = null;
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -121,7 +121,11 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadProjectsForFilter() {
     const token = localStorage.getItem('token');
     const select = document.getElementById('projectFilter');
-
+ if (token) {
+        // 1. اتصل بالـ WebSocket
+        socket = window.TaskoraSocket.connectSocket(token);
+        console.log('🔌 WebSocket initialized');
+    }
     // إذا ما في عنصر filter، اخرج من الدالة
     if (!select) {
         console.log('Project filter not found, skipping...');
