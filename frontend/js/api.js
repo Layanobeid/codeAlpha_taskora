@@ -50,7 +50,10 @@ async function getProjects(token) {
     return apiRequest('/projects', 'GET', null, token);
 }
 
+// frontend/js/api.js
+
 async function createProject(token, projectData) {
+    console.log('📤 Creating project with data:', projectData); // ← أضف هذا
     return apiRequest('/projects', 'POST', projectData, token);
 }
 
