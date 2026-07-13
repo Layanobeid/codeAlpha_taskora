@@ -5,8 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update user info
     if (user.name) {
-        document.getElementById('userName').textContent = user.name;
-        document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4f46e5&color=fff`;
+        const nameEl = document.getElementById('userName');
+        const avatarEl = document.getElementById('userAvatar');
+        if (nameEl) nameEl.textContent = user.name;
+        if (avatarEl) avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4f46e5&color=fff`;
     }
 
     loadDashboardData();
@@ -67,14 +69,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (markAllBtn) {
         markAllBtn.addEventListener('click', async function() {
             const token = localStorage.getItem('token');
+            if (!token) return;
             try {
-                await fetch('https://codealpha-taskora.onrender.com/api/notifications/read-all', {
+                const response = await fetch('https://codealpha-taskora.onrender.com/api/notifications/read-all', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                loadNotifications();
+                if (response.ok) {
+                    loadNotifications();
+                }
             } catch (error) {
                 console.error('Error marking all as read:', error);
             }
@@ -88,15 +93,26 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== LOAD DASHBOARD DATA =====
 async function loadDashboardData() {
     const token = localStorage.getItem('token');
+    if (!token) {
+        console.warn('No token found, redirecting to login...');
+        window.location.href = 'index.html';
+        return;
+    }
     
     try {
         // Get projects
         const projectsData = await window.TaskoraAPI.getProjects(token);
         const projects = projectsData.data || [];
 
-        // ✅ Get tasks - FIXED
-        const tasksData = await window.TaskoraAPI.getTasks(token);
-        const tasks = tasksData.data || [];
+        // ✅ Get tasks safely
+        let tasks = [];
+        try {
+            const tasksResponse = await window.TaskoraAPI.getTasks(token);
+            tasks = tasksResponse.data || [];
+        } catch (taskError) {
+            console.warn('Could not fetch tasks:', taskError.message);
+            tasks = [];
+        }
 
         // Update stats
         const totalProjects = projects.length;
@@ -106,69 +122,85 @@ async function loadDashboardData() {
         // Count unique members
         const members = new Set();
         projects.forEach(p => {
-            p.members?.forEach(m => members.add(m.user?._id || m.user));
+            p.members?.forEach(m => {
+                const memberId = m.user?._id || m.user;
+                if (memberId) members.add(memberId.toString());
+            });
         });
         const totalMembers = members.size;
 
-        document.getElementById('totalProjects').textContent = totalProjects;
-        document.getElementById('completedTasks').textContent = completedTasks;
-        document.getElementById('pendingTasks').textContent = pendingTasks;
-        document.getElementById('totalMembers').textContent = totalMembers || 0;
+        // Update DOM
+        const totalProjectsEl = document.getElementById('totalProjects');
+        const completedTasksEl = document.getElementById('completedTasks');
+        const pendingTasksEl = document.getElementById('pendingTasks');
+        const totalMembersEl = document.getElementById('totalMembers');
+
+        if (totalProjectsEl) totalProjectsEl.textContent = totalProjects;
+        if (completedTasksEl) completedTasksEl.textContent = completedTasks;
+        if (pendingTasksEl) pendingTasksEl.textContent = pendingTasks;
+        if (totalMembersEl) totalMembersEl.textContent = totalMembers || 0;
 
         // Show recent projects (last 3)
         const recentProjects = projects.slice(0, 3);
         const projectsContainer = document.getElementById('recentProjects');
-        if (recentProjects.length === 0) {
-            projectsContainer.innerHTML = `
-                <div class="empty-state">
-                    <p>No projects yet. <a href="projects.html">Create your first project</a></p>
-                </div>
-            `;
-        } else {
-            projectsContainer.innerHTML = recentProjects.map(p => `
-                <div class="project-card">
-                    <h3>${p.title}</h3>
-                    <p>${p.description || 'No description'}</p>
-                    <div class="project-meta">
-                        <span class="project-status ${p.status?.toLowerCase()}">${p.status || 'Active'}</span>
-                        <span>${p.members?.length || 1} members</span>
+        if (projectsContainer) {
+            if (recentProjects.length === 0) {
+                projectsContainer.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
+                        <p>No projects yet. <a href="projects.html">Create your first project</a></p>
                     </div>
-                </div>
-            `).join('');
+                `;
+            } else {
+                projectsContainer.innerHTML = recentProjects.map(p => `
+                    <div class="project-card">
+                        <h3>${p.title || 'Untitled'}</h3>
+                        <p>${p.description || 'No description'}</p>
+                        <div class="project-meta">
+                            <span class="project-status ${p.status?.toLowerCase() || 'active'}">${p.status || 'Active'}</span>
+                            <span>${p.members?.length || 1} members</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
         // Show recent tasks (last 5)
         const recentTasks = tasks.slice(0, 5);
         const tasksContainer = document.getElementById('recentTasks');
-        if (recentTasks.length === 0) {
-            tasksContainer.innerHTML = `
-                <div class="empty-state">
-                    <p>No tasks yet. <a href="kanban.html">Create your first task</a></p>
-                </div>
-            `;
-        } else {
-            tasksContainer.innerHTML = recentTasks.map(t => `
-                <div class="task-item">
-                    <div class="task-info">
-                        <h4>${t.title}</h4>
-                        <p>${t.description || 'No description'}</p>
+        if (tasksContainer) {
+            if (recentTasks.length === 0) {
+                tasksContainer.innerHTML = `
+                    <div class="empty-state" style="text-align: center; padding: 40px 20px;">
+                        <p>No tasks yet. <a href="kanban.html">Create your first task</a></p>
                     </div>
-                    <div class="task-meta">
-                        <span class="task-priority ${t.priority?.toLowerCase()}">${t.priority || 'Medium'}</span>
-                        <span style="font-size: 13px; color: var(--gray-500);">${t.status || 'To Do'}</span>
+                `;
+            } else {
+                tasksContainer.innerHTML = recentTasks.map(t => `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${t.title || 'Untitled'}</h4>
+                            <p>${t.description || 'No description'}</p>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-priority ${t.priority?.toLowerCase() || 'medium'}">${t.priority || 'Medium'}</span>
+                            <span style="font-size: 13px; color: var(--gray-500);">${t.status || 'To Do'}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
     } catch (error) {
         console.error('Error loading dashboard:', error);
+        // Show error in UI
+        const container = document.getElementById('recentProjects');
+        if (container) {
+            container.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">❌ Error loading data: ${error.message}</p>`;
+        }
     }
 }
 
 // ===== NOTIFICATIONS =====
-let notificationInterval = null;
-
 async function loadNotifications() {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -179,6 +211,10 @@ async function loadNotifications() {
                 'Authorization': `Bearer ${token}`
             }
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const result = await response.json();
         
@@ -205,7 +241,7 @@ async function loadNotifications() {
                             <i class="fas ${getNotificationIcon(n.type)}"></i>
                         </div>
                         <div class="notif-content">
-                            <p>${n.message}</p>
+                            <p>${n.message || 'Notification'}</p>
                             <span class="notif-time">${timeAgo(n.createdAt)}</span>
                         </div>
                     </div>
@@ -214,6 +250,7 @@ async function loadNotifications() {
                 list.querySelectorAll('.notification-item').forEach(item => {
                     item.addEventListener('click', async function() {
                         const id = this.dataset.id;
+                        if (!id) return;
                         try {
                             await fetch(`https://codealpha-taskora.onrender.com/api/notifications/${id}/read`, {
                                 method: 'PUT',
@@ -222,6 +259,7 @@ async function loadNotifications() {
                                 }
                             });
                             this.classList.remove('unread');
+                            // Update badge count
                             loadNotifications();
                         } catch (error) {
                             console.error('Error marking notification as read:', error);
@@ -246,6 +284,7 @@ function getNotificationIcon(type) {
 }
 
 function timeAgo(date) {
+    if (!date) return 'Just now';
     const diff = Math.floor((new Date() - new Date(date)) / 1000);
     if (diff < 60) return 'Just now';
     if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
