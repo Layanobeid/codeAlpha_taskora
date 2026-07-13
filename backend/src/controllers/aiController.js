@@ -1,5 +1,5 @@
 // backend/src/controllers/aiController.js
-const { suggestTask } = require('../services/openaiService');
+const { suggestTask } = require('../services/openaiservice');
 
 exports.suggestTask = async (req, res) => {
   try {
