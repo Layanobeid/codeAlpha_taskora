@@ -76,19 +76,23 @@ async function addProjectMember(token, projectId, email, role = 'Member') {
 // frontend/js/api.js
 
 // ===== TASK FUNCTIONS =====
+// frontend/js/api.js
+
+// ===== TASK FUNCTIONS =====
 async function getTasks(token, filters = {}) {
     const query = new URLSearchParams(filters).toString();
     const endpoint = `/tasks${query ? '?' + query : ''}`;
     
     try {
         const response = await apiRequest(endpoint, 'GET', null, token);
-        // ✅ تأكدي أن response.data موجودة ومصفوفة
+        // ✅ تأكدي من إرجاع مصفوفة دائماً
         return {
             success: true,
-            data: response.data || []
+            data: Array.isArray(response.data) ? response.data : []
         };
     } catch (error) {
         console.error('Error fetching tasks:', error);
+        // ✅ في حالة الخطأ، نرجع مصفوفة فارغة
         return {
             success: false,
             data: [],
