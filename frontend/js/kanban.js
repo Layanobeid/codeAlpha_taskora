@@ -2,9 +2,16 @@
 let currentProjectFilter = '';
 let allProjects = [];
 let socket = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // ===== WEBSOCKET - Move this here! =====
+    if (token) {
+        socket = window.TaskoraSocket.connectSocket(token);
+        console.log('🔌 WebSocket initialized');
+    }
 
     // Update user info
     const userNameEl = document.getElementById('userName');
@@ -38,11 +45,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Load projects and tasks
+    // ===== LOAD PROJECTS & TASKS =====
     loadProjectsForFilter();
     loadKanbanData();
 
-    // Project filter - تأكد من وجود العنصر قبل إضافة الـ Listener
+    // ===== PROJECT FILTER =====
     const projectFilter = document.getElementById('projectFilter');
     if (projectFilter) {
         projectFilter.addEventListener('change', function() {
@@ -51,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Create Task Modal
+    // ===== CREATE TASK MODAL =====
     const modal = document.getElementById('taskModal');
     const createBtn = document.getElementById('createTaskBtn');
     const closeBtn = document.querySelector('.close');
@@ -75,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Create Task Form
+    // ===== CREATE TASK FORM =====
     const form = document.getElementById('createTaskForm');
     if (form) {
         form.addEventListener('submit', async function(e) {
@@ -107,6 +114,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.success) {
+                    // ===== EMIT VIA WEBSOCKET =====
+                    if (socket) {
+                        window.TaskoraSocket.emitTaskCreated({
+                            projectId: projectId,
+                            task: response.data
+                        });
+                    }
+                    
                     if (modal) modal.classList.remove('show');
                     form.reset();
                     loadKanbanData();
@@ -116,17 +131,115 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // ===== AI ASSISTANT =====
+    const aiSuggestBtn = document.getElementById('aiSuggestBtn');
+    if (aiSuggestBtn) {
+        aiSuggestBtn.addEventListener('click', async function() {
+            const description = document.getElementById('taskDescription').value;
+            const resultDiv = document.getElementById('aiSuggestionResult');
+            
+            if (!description || description.length < 5) {
+                alert('Please write at least 5 characters describing your task');
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="ai-loading">🤖 AI is thinking...</div>';
+
+            try {
+                const suggestion = await window.TaskoraAI.getAISuggestion(description);
+                
+                resultDiv.innerHTML = `
+                    <div class="ai-result">
+                        <div class="ai-field">
+                            <strong>📝 Title:</strong> 
+                            <input type="text" id="aiTitle" value="${suggestion.title}" style="width: 100%; padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
+                        </div>
+                        <div class="ai-field" style="margin-top: 8px;">
+                            <strong>⚡ Priority:</strong> 
+                            <select id="aiPriority" style="padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
+                                <option value="Low" ${suggestion.priority === 'Low' ? 'selected' : ''}>Low</option>
+                                <option value="Medium" ${suggestion.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+                                <option value="High" ${suggestion.priority === 'High' ? 'selected' : ''}>High</option>
+                                <option value="Urgent" ${suggestion.priority === 'Urgent' ? 'selected' : ''}>Urgent</option>
+                            </select>
+                        </div>
+                        <div class="ai-field" style="margin-top: 8px;">
+                            <strong>📅 Estimated Days:</strong> 
+                            <input type="number" id="aiDays" value="${suggestion.estimatedDays || 3}" style="width: 80px; padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
+                        </div>
+                        <div class="ai-field" style="margin-top: 8px;">
+                            <strong>📋 Subtasks:</strong>
+                            <ul style="margin-top: 4px; padding-left: 20px;">
+                                ${suggestion.subtasks.map(s => `<li>${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="ai-field" style="margin-top: 8px;">
+                            <strong>💡 Summary:</strong>
+                            <p style="margin-top: 4px; color: var(--gray-600); font-size: 14px;">${suggestion.summary}</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                            <button type="button" id="applyAISuggestion" class="btn-primary" style="width: auto; padding: 6px 20px; font-size: 13px;">
+                                ✅ Apply Suggestion
+                            </button>
+                            <button type="button" id="dismissAISuggestion" class="btn-secondary" style="width: auto; padding: 6px 20px; font-size: 13px;">
+                                ❌ Dismiss
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Apply suggestion
+                document.getElementById('applyAISuggestion')?.addEventListener('click', function() {
+                    const title = document.getElementById('aiTitle').value;
+                    const priority = document.getElementById('aiPriority').value;
+                    const days = parseInt(document.getElementById('aiDays').value) || 3;
+                    
+                    document.getElementById('taskTitle').value = title;
+                    document.getElementById('taskPriority').value = priority;
+                    
+                    const date = new Date();
+                    date.setDate(date.getDate() + days);
+                    document.getElementById('taskDeadline').value = date.toISOString().split('T')[0];
+                    
+                    resultDiv.style.display = 'none';
+                    resultDiv.innerHTML = '';
+                });
+
+                // Dismiss suggestion
+                document.getElementById('dismissAISuggestion')?.addEventListener('click', function() {
+                    resultDiv.style.display = 'none';
+                    resultDiv.innerHTML = '';
+                });
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div style="color: var(--danger); padding: 12px;">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // ===== LOGOUT =====
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        });
+    }
 });
 
+// ===== LOAD PROJECTS FOR FILTER =====
 async function loadProjectsForFilter() {
     const token = localStorage.getItem('token');
     const select = document.getElementById('projectFilter');
- if (token) {
-        // 1. اتصل بالـ WebSocket
-        socket = window.TaskoraSocket.connectSocket(token);
-        console.log('🔌 WebSocket initialized');
-    }
-    // إذا ما في عنصر filter، اخرج من الدالة
+
     if (!select) {
         console.log('Project filter not found, skipping...');
         return;
@@ -143,6 +256,7 @@ async function loadProjectsForFilter() {
     }
 }
 
+// ===== LOAD PROJECTS FOR SELECT =====
 async function loadProjectsForSelect() {
     const token = localStorage.getItem('token');
     const select = document.getElementById('taskProject');
@@ -161,8 +275,7 @@ async function loadProjectsForSelect() {
     }
 }
 
-
-
+// ===== LOAD KANBAN DATA =====
 async function loadKanbanData() {
     const token = localStorage.getItem('token');
     const filters = {};
@@ -205,6 +318,7 @@ async function loadKanbanData() {
     }
 }
 
+// ===== RENDER COLUMN =====
 function renderColumn(containerId, tasks, status) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -247,6 +361,7 @@ function renderColumn(containerId, tasks, status) {
     container.addEventListener('drop', handleDrop);
 }
 
+// ===== HELPERS =====
 function getPriorityColor(priority) {
     const colors = {
         'Low': '#6b7280',
@@ -265,7 +380,7 @@ function updateColumnCounts() {
     });
 }
 
-// Drag and Drop
+// ===== DRAG AND DROP =====
 let draggedTaskId = null;
 
 function handleDragStart(e) {
@@ -291,7 +406,17 @@ async function handleDrop(e) {
 
     try {
         await window.TaskoraAPI.updateTaskStatus(token, draggedTaskId, newStatus);
-        loadKanbanData(); // Reload
+        
+        // ===== EMIT VIA WEBSOCKET =====
+        if (socket) {
+            window.TaskoraSocket.emitTaskStatusChanged({
+                projectId: column.dataset.projectId || 'unknown',
+                taskId: draggedTaskId,
+                status: newStatus
+            });
+        }
+        
+        loadKanbanData();
     } catch (error) {
         alert('Error moving task: ' + error.message);
     }
@@ -312,96 +437,8 @@ async function moveTask(taskId, currentStatus) {
 
     try {
         await window.TaskoraAPI.updateTaskStatus(token, taskId, newStatus);
-        loadKanbanData(); // Reload
+        loadKanbanData();
     } catch (error) {
         alert('Error moving task: ' + error.message);
     }
-}
-// ===== AI ASSISTANT =====
-const aiSuggestBtn = document.getElementById('aiSuggestBtn');
-if (aiSuggestBtn) {
-    aiSuggestBtn.addEventListener('click', async function() {
-        const description = document.getElementById('taskDescription').value;
-        const resultDiv = document.getElementById('aiSuggestionResult');
-        
-        if (!description || description.length < 5) {
-            alert('Please write at least 5 characters describing your task');
-            return;
-        }
-
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<div class="ai-loading">🤖 AI is thinking...</div>';
-
-        try {
-            const suggestion = await window.TaskoraAI.getAISuggestion(description);
-            
-            resultDiv.innerHTML = `
-                <div class="ai-result">
-                    <div class="ai-field">
-                        <strong>📝 Title:</strong> 
-                        <input type="text" id="aiTitle" value="${suggestion.title}" style="width: 100%; padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
-                    </div>
-                    <div class="ai-field" style="margin-top: 8px;">
-                        <strong>⚡ Priority:</strong> 
-                        <select id="aiPriority" style="padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
-                            <option value="Low" ${suggestion.priority === 'Low' ? 'selected' : ''}>Low</option>
-                            <option value="Medium" ${suggestion.priority === 'Medium' ? 'selected' : ''}>Medium</option>
-                            <option value="High" ${suggestion.priority === 'High' ? 'selected' : ''}>High</option>
-                            <option value="Urgent" ${suggestion.priority === 'Urgent' ? 'selected' : ''}>Urgent</option>
-                        </select>
-                    </div>
-                    <div class="ai-field" style="margin-top: 8px;">
-                        <strong>📅 Estimated Days:</strong> 
-                        <input type="number" id="aiDays" value="${suggestion.estimatedDays || 3}" style="width: 80px; padding: 6px 10px; border: 1px solid var(--gray-200); border-radius: 4px; margin-top: 4px;">
-                    </div>
-                    <div class="ai-field" style="margin-top: 8px;">
-                        <strong>📋 Subtasks:</strong>
-                        <ul style="margin-top: 4px; padding-left: 20px;">
-                            ${suggestion.subtasks.map(s => `<li>${s}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="ai-field" style="margin-top: 8px;">
-                        <strong>💡 Summary:</strong>
-                        <p style="margin-top: 4px; color: var(--gray-600); font-size: 14px;">${suggestion.summary}</p>
-                    </div>
-                    <button type="button" id="applyAISuggestion" class="btn-primary" style="margin-top: 12px; width: auto; padding: 6px 20px; font-size: 13px;">
-                        ✅ Apply Suggestion
-                    </button>
-                    <button type="button" id="dismissAISuggestion" class="btn-secondary" style="margin-top: 12px; width: auto; padding: 6px 20px; font-size: 13px;">
-                        ❌ Dismiss
-                    </button>
-                </div>
-            `;
-
-            // Apply suggestion
-            document.getElementById('applyAISuggestion')?.addEventListener('click', function() {
-                const title = document.getElementById('aiTitle').value;
-                const priority = document.getElementById('aiPriority').value;
-                const days = parseInt(document.getElementById('aiDays').value) || 3;
-                
-                document.getElementById('taskTitle').value = title;
-                document.getElementById('taskPriority').value = priority;
-                
-                const date = new Date();
-                date.setDate(date.getDate() + days);
-                document.getElementById('taskDeadline').value = date.toISOString().split('T')[0];
-                
-                resultDiv.style.display = 'none';
-                resultDiv.innerHTML = '';
-            });
-
-            // Dismiss suggestion
-            document.getElementById('dismissAISuggestion')?.addEventListener('click', function() {
-                resultDiv.style.display = 'none';
-                resultDiv.innerHTML = '';
-            });
-
-        } catch (error) {
-            resultDiv.innerHTML = `
-                <div style="color: var(--danger);">
-                    ❌ Error: ${error.message}
-                </div>
-            `;
-        }
-    });
 }
